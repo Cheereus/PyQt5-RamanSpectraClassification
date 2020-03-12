@@ -30,3 +30,11 @@ def cross_validation(x,y,s=10):
     clf.fit(x, y)
     joblib.dump(clf, 'output/svm_model.pkl')
     return clf, scores
+
+# 读取模型
+def modelReader(filePath):
+        
+    f = open(filePath,'rb')
+    model = joblib.load(f)
+    f.close()
+    return model

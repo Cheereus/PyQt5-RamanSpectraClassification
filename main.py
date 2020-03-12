@@ -40,13 +40,16 @@ class DataOperator:
     # 表格数据展示
     def setTable(self,head,data):
         data = data.T
+        rows, columns = data.shape
         headLabel = []
+        if head is None:
+            head = range(rows)
+
         for k in range(len(head)):
             if(head[k] < 0.5):
                 headLabel.append("低浓度")
             else:
                 headLabel.append("高浓度")
-        rows, columns = data.shape
         self.tableWidget.setRowCount(rows)
         self.tableWidget.setColumnCount(columns)
         self.tableWidget.setHorizontalHeaderLabels(headLabel)
@@ -128,6 +131,7 @@ class ApplicationWindow(QMainWindow):
         self.ratio = None   # 方差贡献率
         self.OSVM = None    # 最佳 SVM 模型
 
+        # 布局
         self.main_widget = QWidget(self)
         mlayout = QHBoxLayout(self.main_widget)
         llayout = QFormLayout()
@@ -144,19 +148,21 @@ class ApplicationWindow(QMainWindow):
 
         # 菜单栏初始化
         self.file_menu = QMenu('文件', self)
-        self.file_menu.addAction('导入训练集', self.fileOpen)
+        self.file_menu.addAction('导入训练集', self.trainOpen)
+        self.file_menu.addAction('导入模型', self.modelOpen)
         self.menuBar().addMenu(self.file_menu)
         self.help_menu = QMenu('帮助', self)
         self.menuBar().addSeparator()
         self.menuBar().addMenu(self.help_menu)
         self.help_menu.addAction('关于', self.about)
         
+        # 窗口初始化
         mlayout.addLayout(llayout)
         mlayout.addLayout(rlayout)
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
 
-
+    # 居中
     def center(self):
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
@@ -164,7 +170,7 @@ class ApplicationWindow(QMainWindow):
         self.move(qr.topLeft())
 
     # 读取训练集
-    def fileOpen(self):
+    def trainOpen(self):
         filePath,filetype = QFileDialog.getOpenFileName(self,"选取文件","./", "CSV Files (*.csv)")
         if filePath:
             self.filepath.setText("已选择文件：" + filePath)
@@ -176,6 +182,19 @@ class ApplicationWindow(QMainWindow):
         else:
             QMessageBox.warning(self,"温馨提示","打开文件错误，请重新尝试！",QMessageBox.Cancel)
 
+    # 读取模型
+    def modelOpen(self):
+        filePath,filetype = QFileDialog.getOpenFileName(self,"选取文件","./", "model Files (*.pkl)")
+        if filePath:
+            self.OSVM = modelReader(filePath)
+            self.filepath.setText("已选择模型：" + filePath)
+            self.btn6.setVisible(True)
+            
+        else:
+            QMessageBox.warning(self,"温馨提示","打开文件错误，请重新尝试！",QMessageBox.Cancel)
+
+
+    # 表单生成
     def addForm(self,llayout):
 
         self.filepath = QLabel('尚未选择文件！')
@@ -219,8 +238,8 @@ class ApplicationWindow(QMainWindow):
         self.btn6 = QPushButton('开始预测')
         self.btn6.clicked.connect(lambda: DataOperator.getPredict(self))
         self.predictLabel = QLabel('预测结果已保存至 output/predictResult.csv')
-        llayout.addRow(self.predictLabel)
         llayout.addRow(self.btn6)
+        llayout.addRow(self.predictLabel)
         self.btn6.setVisible(False)
         self.predictLabel.setVisible(False)
 
@@ -231,18 +250,11 @@ class ApplicationWindow(QMainWindow):
         self.fileQuit()
 
     def about(self):
-        QMessageBox.about(self, "About",
-        """embedding_in_qt5.py example
-        Copyright 2015 BoxControL
-
-        This program is a simple example of a Qt5 application embedding matplotlib
-        canvases. It is base on example from matplolib documentation, and initially was
-        developed from Florent Rougon and Darren Dale.
-
-        http://matplotlib.org/examples/user_interfaces/embedding_in_qt4.html
-
-        It may be used and modified with no restriction; raw copies as well as
-        modified versions may be distributed without limitation.
+        QMessageBox.about(self, "关于",
+        """对拉曼光谱数据进行二分类的支持向量机模型
+        将拉曼光谱数据根据浓度高低分为两类并进行预测
+        
+        作者：CheeReus_11
         """
         )
 
