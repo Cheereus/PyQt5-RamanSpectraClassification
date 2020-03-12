@@ -24,7 +24,7 @@ class DataOperator:
         f.close()
         array_data = np.array(data)
         X=array_data.T[1:,1:]  # 纯数据
-        y=array_data.T[1:,0]
+        y=array_data.T[1:,0]   # 第一行
         return X,y
 
     # 根据设定的阈值来获取标注向量 labels，低于阈值0 高于阈值1
@@ -42,7 +42,7 @@ class DataOperator:
         data = data.T
         headLabel = []
         for k in range(len(head)):
-            if(item[k] < 0.5):
+            if(head[k] < 0.5):
                 headLabel.append("低浓度")
             else:
                 headLabel.append("高浓度")
@@ -90,6 +90,23 @@ class DataOperator:
         self.svmLabel.setVisible(True)
         self.btn6.setVisible(True)
 
+    # 预测
+    def getPredict(self):
+        filePath,filetype = QFileDialog.getOpenFileName(self,"选取文件","./", "CSV Files (*.csv)")
+        if filePath:
+            self.filepath.setText("已选测试集：" + filePath)
+            self.X, y = DataOperator.csvReader(filePath)
+            DataOperator.pca(self, self.X, self.components)
+            self.labels = self.OSVM.predict(self.newX)
+            DataOperator.setTable(self, self.labels, self.newX)
+
+            data = np.hstack((self.labels[:,None], self.X))
+            pd.DataFrame.to_csv(pd.DataFrame(data.T),'output/predictResult.csv', mode='w',header=None,index=None)
+            self.predictLabel.setVisible(True)
+            
+        else:
+            QMessageBox.warning(self,"温馨提示","打开文件错误，请重新尝试！",QMessageBox.Cancel)
+
 # 程序窗口     
 class ApplicationWindow(QMainWindow):
     def __init__(self):
@@ -102,7 +119,7 @@ class ApplicationWindow(QMainWindow):
         self.setWindowIcon(QIcon('icon.jpg'))   
         
         # 全局变量
-        self.threshold = 25 # 分类阈值 默认 25
+        self.threshold = 20 # 分类阈值 默认 20
         self.components = 3 # 主成分数 默认 3
         self.scross = 10    # S折交叉验证 默认 10
         self.X = None       # 原始数据
@@ -146,9 +163,9 @@ class ApplicationWindow(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+    # 读取训练集
     def fileOpen(self):
         filePath,filetype = QFileDialog.getOpenFileName(self,"选取文件","./", "CSV Files (*.csv)")
-        print(filePath,filetype)
         if filePath:
             self.filepath.setText("已选择文件：" + filePath)
             self.X, y = DataOperator.csvReader(filePath)
@@ -201,8 +218,11 @@ class ApplicationWindow(QMainWindow):
         # 预测
         self.btn6 = QPushButton('开始预测')
         self.btn6.clicked.connect(lambda: DataOperator.getPredict(self))
+        self.predictLabel = QLabel('预测结果已保存至 output/predictResult.csv')
+        llayout.addRow(self.predictLabel)
         llayout.addRow(self.btn6)
         self.btn6.setVisible(False)
+        self.predictLabel.setVisible(False)
 
     def fileQuit(self):
         self.close()
