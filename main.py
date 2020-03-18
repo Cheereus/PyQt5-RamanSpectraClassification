@@ -20,7 +20,7 @@ class DataOperator:
         
         # 由于路径中的中文会导致 read_csv 报错，因此先用 open 打开
         f = open(filePath,'r')
-        data=pd.read_csv(f,header=None)
+        data=pd.read_csv(f,header=None, low_memory=False)
         f.close()
         array_data = np.array(data)
         X=array_data.T[1:,1:]  # 纯数据
@@ -41,6 +41,7 @@ class DataOperator:
     def setTable(self,head,data):
         data = data.T
         rows, columns = data.shape
+        print(data.shape)
         headLabel = []
         if head is None:
             head = range(rows)
@@ -50,14 +51,30 @@ class DataOperator:
                 headLabel.append("低浓度")
             else:
                 headLabel.append("高浓度")
-        self.tableWidget.setRowCount(rows)
+        self.tableWidget.setRowCount(rows+1)
         self.tableWidget.setColumnCount(columns)
-        self.tableWidget.setHorizontalHeaderLabels(headLabel)
+        self.tableWidget.setVerticalHeaderLabels([str(item) for item in range(rows+1)])
+        for k in range(columns):
+            #为表格添加内置头部
+            self.tableWidget.setItem(0,k,QTableWidgetItem(str(headLabel[k])))
         for i in range(rows):
             for j in range(columns):
                 #为每个表格内添加数据
-                self.tableWidget.setItem(i,j,QTableWidgetItem(str(data[i,j])))
+                self.tableWidget.setItem(i+1,j,QTableWidgetItem(str(data[i,j])))
+        
+        self.btn7.setEnabled(True)
     
+    # 清空表格内容
+    def clearTable(self):
+        self.tableWidget.setRowCount(20)
+        self.tableWidget.setColumnCount(20)
+        self.tableWidget.setVerticalHeaderLabels([str(item) for item in range(20)])
+        for i in range(20):
+            for j in range(20):
+                #为每个表格内添加数据
+                self.tableWidget.setItem(i,j,QTableWidgetItem(''))
+        
+
     # 参数设定
     def changeParas(self,type):
         if type == 1:
@@ -74,9 +91,11 @@ class DataOperator:
     def pca(self,X,n):
         self.newX, self.ratio = pca_op(X,n)
         ratioText = "方差贡献率：\n"
+        sum = 0
         for i in range(len(self.ratio)):
             ratioText = ratioText + str(self.ratio[i]) + "\n"
-        ratioText = ratioText + "降维后数据及标注序列已保存至 output 目录下"
+            sum = sum + self.ratio[i]
+        ratioText = ratioText + '\n总贡献率：' + str(sum) + "\n降维后数据及标注序列已保存至 output 目录下"
         DataOperator.setTable(self, self.labels, self.newX)
         self.ratioLabel.setText(ratioText)
         self.ratioLabel.setVisible(True)
@@ -144,6 +163,7 @@ class ApplicationWindow(QMainWindow):
         self.tableWidget = QTableWidget()
         self.tableWidget.setRowCount(20)
         self.tableWidget.setColumnCount(20)
+        self.tableWidget.setVerticalHeaderLabels([str(item) for item in range(20)])
         rlayout.addWidget(self.tableWidget)
 
         # 菜单栏初始化
@@ -242,6 +262,12 @@ class ApplicationWindow(QMainWindow):
         llayout.addRow(self.predictLabel)
         self.btn6.setVisible(False)
         self.predictLabel.setVisible(False)
+
+        # 清空表格
+        self.btn7 = QPushButton('清空右侧表格')
+        self.btn7.clicked.connect(lambda: DataOperator.clearTable(self))
+        llayout.addRow(self.btn7)
+        self.btn7.setEnabled(False)
 
     def fileQuit(self):
         self.close()

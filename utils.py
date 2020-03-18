@@ -38,3 +38,9 @@ def modelReader(filePath):
     model = joblib.load(f)
     f.close()
     return model
+
+# 近红外光谱基线校正 airPLS
+
+def airPLS():
+    
+    return None
