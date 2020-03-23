@@ -46,7 +46,7 @@ class DataOperator:
         array_data = np.array(data)
         X=array_data.T[1:,1:]  # 纯数据
         y=array_data.T[1:,0]   # 第一行
-        y = y * 100
+        y = y * 100            # 支持向量机训练仅支持 int 类型的 label 因此将浓度值进行去除小数点的处理
         return X,y
 
     # 根据设定的阈值来获取标注向量 labels，低于阈值0 高于阈值1
@@ -74,7 +74,7 @@ class DataOperator:
                 else:
                     headLabel.append("高浓度")
         else:
-            headLabel = head / 100
+            headLabel = head / 100 # 将浓度值恢复小数点
         
         self.tableWidget.setRowCount(rows+1)
         self.tableWidget.setColumnCount(columns)
@@ -166,16 +166,17 @@ class ApplicationWindow(QMainWindow):
         self.setWindowIcon(QIcon('icon.jpg'))   
         
         # 全局变量
-        self.classType = 'binary'
-        self.classNum = 2   # 分类数目 默认二分类
-        self.threshold = 20 # 分类阈值 默认 20
-        self.components = 3 # 主成分数 默认 3
-        self.scross = 10    # S折交叉验证 默认 10
-        self.X = None       # 原始数据
-        self.newX = None    # 降维后的数据
-        self.labels = None  # 标注序列
-        self.ratio = None   # 方差贡献率
-        self.OSVM = None    # 最佳 SVM 模型
+        self.classType = 'binary' # 分类模式 默认二分类
+        self.classNum = 2         # 分类数目 默认是二分类模式下的 2
+        self.threshold = 20       # 分类阈值 默认 20
+        self.components = 3       # 主成分数 默认 3
+        self.scross = 10          # S折交叉验证 默认 10
+        self.X = None             # 原始数据
+        self.headline = None      # 原始表头 即浓度
+        self.newX = None          # 降维后的数据
+        self.labels = None        # 标注序列
+        self.ratio = None         # 方差贡献率
+        self.OSVM = None          # 最佳 SVM 模型
 
         # 布局
         self.main_widget = QWidget(self)
@@ -244,6 +245,7 @@ class ApplicationWindow(QMainWindow):
 
 
     # 表单生成
+    # TODO 采用了非常粗暴的逐项添加，需要采用更优的方法
     def addForm(self,llayout):
 
         self.filepath = QLabel('尚未选择文件！')
@@ -312,8 +314,9 @@ class ApplicationWindow(QMainWindow):
 
     def about(self):
         QMessageBox.about(self, "关于",
-        """对拉曼光谱数据进行二分类的支持向量机模型
-        将拉曼光谱数据根据浓度高低分为两类并进行预测
+        """
+        对拉曼光谱数据进行分类的支持向量机模型
+        将拉曼光谱数据根据浓度分类并进行预测
         
         作者：CheeReus_11
         """
