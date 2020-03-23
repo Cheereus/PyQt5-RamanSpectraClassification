@@ -14,6 +14,27 @@ from utils import *
 # 数据处理
 class DataOperator:
 
+    # 切换模式
+    def toggleClassType(self):
+        if self.classType == 'binary':
+            self.classType = 'multi'
+        else:
+            self.classType = 'binary'
+        DataOperator.updateLabels(self)
+
+    # 更新分类数目
+    def updateLabels(self):
+        if self.classType == 'binary':
+            self.classTypeLabel.setText('当前模式：二分类')
+            self.classNumberLabel.setText('当前训练集类别数目：2')
+            self.labels = DataOperator.getLabel(self.headline,self.threshold)
+        else:
+            self.classTypeLabel.setText('当前模式：多分类')
+            self.classNumberLabel.setText('当前训练集类别数目：' + str(self.classNum))
+            self.labels = self.headline
+        print(self.labels)
+        
+
     # csv文件处理 文件中第一行为浓度
     # 输出 纯数据矩阵 X 、浓度向量 y
     def csvReader(filePath):
@@ -25,6 +46,7 @@ class DataOperator:
         array_data = np.array(data)
         X=array_data.T[1:,1:]  # 纯数据
         y=array_data.T[1:,0]   # 第一行
+        y = y * 100
         return X,y
 
     # 根据设定的阈值来获取标注向量 labels，低于阈值0 高于阈值1
@@ -32,7 +54,7 @@ class DataOperator:
         size = len(y)
         labels = np.zeros(size)
         for i in range(size):
-            if y[i] > threshold:
+            if y[i] > (threshold * 100):
                 labels[i] = 1               
         np.savetxt('output/labels.csv', labels, delimiter = ',')
         return labels
@@ -41,16 +63,19 @@ class DataOperator:
     def setTable(self,head,data):
         data = data.T
         rows, columns = data.shape
-        print(data.shape)
         headLabel = []
         if head is None:
             head = range(rows)
 
-        for k in range(len(head)):
-            if(head[k] < 0.5):
-                headLabel.append("低浓度")
-            else:
-                headLabel.append("高浓度")
+        if self.classType == 'binary':
+            for k in range(len(head)):
+                if(head[k] < 0.5):
+                    headLabel.append("低浓度")
+                else:
+                    headLabel.append("高浓度")
+        else:
+            headLabel = head / 100
+        
         self.tableWidget.setRowCount(rows+1)
         self.tableWidget.setColumnCount(columns)
         self.tableWidget.setVerticalHeaderLabels([str(item) for item in range(rows+1)])
@@ -141,6 +166,8 @@ class ApplicationWindow(QMainWindow):
         self.setWindowIcon(QIcon('icon.jpg'))   
         
         # 全局变量
+        self.classType = 'binary'
+        self.classNum = 2   # 分类数目 默认二分类
         self.threshold = 20 # 分类阈值 默认 20
         self.components = 3 # 主成分数 默认 3
         self.scross = 10    # S折交叉验证 默认 10
@@ -190,12 +217,14 @@ class ApplicationWindow(QMainWindow):
         self.move(qr.topLeft())
 
     # 读取训练集
-    def trainOpen(self):
+    def trainOpen(self, type='binary'):
         filePath,filetype = QFileDialog.getOpenFileName(self,"选取文件","./", "CSV Files (*.csv)")
         if filePath:
             self.filepath.setText("已选择文件：" + filePath)
-            self.X, y = DataOperator.csvReader(filePath)
-            self.labels = DataOperator.getLabel(y,self.threshold)
+            self.X, self.headline = DataOperator.csvReader(filePath)
+            print(pd.value_counts(self.headline))
+            self.classNum = len(pd.value_counts(self.headline))
+            DataOperator.updateLabels(self)
             DataOperator.setTable(self, self.labels, self.X)
             self.btn4.setEnabled(True)
             
@@ -220,18 +249,24 @@ class ApplicationWindow(QMainWindow):
         self.filepath = QLabel('尚未选择文件！')
         self.filepath.setFixedWidth(600)
         llayout.addRow(self.filepath)
+        self.classNumberLabel = QLabel('当前训练集类别数目：2')
+        llayout.addRow(self.classNumberLabel)
 
         # 参数展示及修改
+        self.classTypeLabel = QLabel('当前模式：二分类')
         self.thresholdLabel = QLabel('二分类阈值：' + str(self.threshold))
         self.componentsLabel = QLabel('主成分数目：' + str(self.components))
         self.scrossLabel = QLabel('交叉验证折数：' + str(self.scross))
+        btn0 = QPushButton('切换')
         btn1 = QPushButton('修改')
         btn2 = QPushButton('修改')
         btn3 = QPushButton('修改')
+        btn0.clicked.connect(lambda: DataOperator.toggleClassType(self))
         btn1.clicked.connect(lambda: DataOperator.changeParas(self,1))
         btn2.clicked.connect(lambda: DataOperator.changeParas(self,2))
         btn3.clicked.connect(lambda: DataOperator.changeParas(self,3))
         llayout.setLabelAlignment(QtCore.Qt.AlignRight) # 标签右对齐
+        llayout.addRow(self.classTypeLabel,btn0)
         llayout.addRow(self.thresholdLabel,btn1)
         llayout.addRow(self.componentsLabel,btn2)
         llayout.addRow(self.scrossLabel,btn3)

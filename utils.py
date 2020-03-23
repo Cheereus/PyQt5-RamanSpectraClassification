@@ -25,7 +25,8 @@ def pca_op(X,c=3):
 # 输出最佳的SVM模型
 def cross_validation(x,y,s=10):
 
-    clf = svm.SVC(kernel='rbf', verbose=True,gamma='scale')
+    clf = svm.SVC(kernel='rbf', verbose=True,gamma='scale', decision_function_shape='ovo')
+    y = y.astype('int')
     scores = cross_val_score(clf, x, y.ravel(), cv=s)
     clf.fit(x, y)
     joblib.dump(clf, 'output/svm_model.pkl')
