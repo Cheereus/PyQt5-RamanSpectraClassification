@@ -21,18 +21,28 @@ class DataOperator:
         else:
             self.classType = 'binary'
         DataOperator.updateLabels(self)
+        self.ratioLabel.setVisible(False)
+        self.btn5.setEnabled(False)
+        self.svmLabel.setVisible(False)
+        self.btn6.setVisible(False)
+        self.predictLabel.setVisible(False)
 
     # 更新分类数目
     def updateLabels(self):
         if self.classType == 'binary':
             self.classTypeLabel.setText('当前模式：二分类')
             self.classNumberLabel.setText('当前训练集类别数目：2')
-            self.labels = DataOperator.getLabel(self.headline,self.threshold)
+            self.classNumberLabel.setVisible(False)
+            if self.headline is not None:
+                self.labels = DataOperator.getLabel(self.headline,self.threshold)
+                DataOperator.setTable(self, self.labels, self.X)
         else:
             self.classTypeLabel.setText('当前模式：多分类')
             self.classNumberLabel.setText('当前训练集类别数目：' + str(self.classNum))
-            self.labels = self.headline
-        print(self.labels)
+            self.classNumberLabel.setVisible(True)
+            if self.headline is not None:
+                self.labels = self.headline
+                DataOperator.setTable(self, self.labels, self.X)
         
 
     # csv文件处理 文件中第一行为浓度
@@ -130,9 +140,12 @@ class DataOperator:
     def getSVM(self,newX,labels,s):
         self.OSVM, scores = cross_validation(newX,labels,s)
         svmText = "交叉验证准确率：\n"
+        avg = 0
         for i in range(len(scores)):
+            avg = avg + scores[i]
             svmText = svmText + str(scores[i]) + "\n"
-        svmText = svmText + "模型已保存至 output/svm_model.pkl"
+        avg = avg / len(scores)
+        svmText = svmText + '平均准确率：' + str(avg) + "\n模型已保存至 output/svm_model.pkl"
         self.svmLabel.setText(svmText)
         self.svmLabel.setVisible(True)
         self.btn6.setVisible(True)
@@ -146,9 +159,27 @@ class DataOperator:
             DataOperator.pca(self, self.X, self.components)
             self.labels = self.OSVM.predict(self.newX)
             DataOperator.setTable(self, self.labels, self.newX)
+            
+            correct = 0
+            if self.classType == 'binary':
+                labelY = DataOperator.getLabel(self.headline,self.threshold)
+                for i in range(len(self.labels)):
+                    if self.labels[i] == labelY[i]:
+                        correct = correct + 1
+            else:
+                for i in range(len(self.labels)):
+                    if self.labels[i] == self.headline[i]:
+                        correct = correct + 1
 
+            correctRate = correct / len(self.labels)
+            
+            if self.classType == 'multi':
+                self.labels = self.labels / 100
             data = np.hstack((self.labels[:,None], self.X))
+            data = np.hstack(((self.headline / 100)[:,None], data))
             pd.DataFrame.to_csv(pd.DataFrame(data.T),'output/predictResult.csv', mode='w',header=None,index=None)
+            
+            self.predictLabel.setText('准确率：' + str(correctRate) + '\n预测结果已保存至 output/predictResult.csv')
             self.predictLabel.setVisible(True)
             
         else:
@@ -223,7 +254,6 @@ class ApplicationWindow(QMainWindow):
         if filePath:
             self.filepath.setText("已选择文件：" + filePath)
             self.X, self.headline = DataOperator.csvReader(filePath)
-            print(pd.value_counts(self.headline))
             self.classNum = len(pd.value_counts(self.headline))
             DataOperator.updateLabels(self)
             DataOperator.setTable(self, self.labels, self.X)
@@ -251,8 +281,9 @@ class ApplicationWindow(QMainWindow):
         self.filepath = QLabel('尚未选择文件！')
         self.filepath.setFixedWidth(600)
         llayout.addRow(self.filepath)
-        self.classNumberLabel = QLabel('当前训练集类别数目：2')
+        self.classNumberLabel = QLabel('当前分类数：2')
         llayout.addRow(self.classNumberLabel)
+        self.classNumberLabel.setVisible(False)
 
         # 参数展示及修改
         self.classTypeLabel = QLabel('当前模式：二分类')

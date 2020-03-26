@@ -5,6 +5,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, Normalizer    # 
 from sklearn import svm
 from sklearn.model_selection import cross_val_score
 from sklearn.externals import joblib
+from sklearn.model_selection import GridSearchCV
 
 # 输入数据矩阵 X 及主成分数目 c
 # 输出降维后的数据及贡献率
@@ -28,6 +29,9 @@ def cross_validation(x,y,s=10):
     clf = svm.SVC(kernel='rbf', verbose=True,gamma='scale', decision_function_shape='ovo')
     y = y.astype('int')
     scores = cross_val_score(clf, x, y.ravel(), cv=s)
+    # grid = GridSearchCV(clf,param_grid, scoring=None, fit_params=None, n_jobs=2, iid=True, refit=True,cv=None, verbose=0, pre_dispatch='2*n_jobs', error_score='raise',return_train_score=True)
+    # grid.fit(x,y)
+    # print(grid.grid_scores_, grid.best_params_, grid.best_score_)
     clf.fit(x, y)
     joblib.dump(clf, 'output/svm_model.pkl')
     return clf, scores
