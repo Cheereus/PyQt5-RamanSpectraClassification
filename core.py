@@ -350,7 +350,6 @@ def getPredict(self):
         self.X, self.headline = csvReader(filePath)
         pca(self, self.X, self.components,showTable=False)
         self.labels = self.OSVM.predict(self.newX)
-        setTable(self, self.labels, self.newX)
         
         correct = 0
         if self.classType == 'binary':
@@ -366,6 +365,7 @@ def getPredict(self):
         
         if self.classType == 'multi':
             self.labels = self.labels / 100
+        setTable(self, self.labels, self.newX)
         data = np.hstack((self.labels[:,None], self.X))
         data = np.hstack(((self.headline / 100)[:,None], data))
         pd.DataFrame.to_csv(pd.DataFrame(data.T),'output/predictResult.csv', mode='w',header=None,index=None)
