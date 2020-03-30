@@ -26,15 +26,27 @@ def pca_op(X,c=3):
 # 输出最佳的SVM模型
 def cross_validation(x,y,s=10):
 
-    clf = svm.SVC(kernel='rbf', verbose=True,gamma='scale', decision_function_shape='ovo')
+    svc = svm.SVC()
+    parameters = [
+        {
+            'C': [1, 3, 5],
+            'gamma': [0.001, 0.1, 1, 10],
+            'degree': [3,5,7,9],
+            'kernel': ['linear','poly', 'rbf', 'sigmoid'],
+            'decision_function_shape': ['ovo', 'ovr' ,None]
+        }
+    ]
+    clf=GridSearchCV(svc,parameters,cv=s,refit=True)
     y = y.astype('int')
-    scores = cross_val_score(clf, x, y.ravel(), cv=s)
-    # grid = GridSearchCV(clf,param_grid, scoring=None, fit_params=None, n_jobs=2, iid=True, refit=True,cv=None, verbose=0, pre_dispatch='2*n_jobs', error_score='raise',return_train_score=True)
-    # grid.fit(x,y)
-    # print(grid.grid_scores_, grid.best_params_, grid.best_score_)
     clf.fit(x, y)
-    joblib.dump(clf, 'output/svm_model.pkl')
-    return clf, scores
+    print(clf.best_params_)
+    print(clf.best_score_)
+    joblib.dump(clf.best_estimator_, 'output/svm_model.pkl')
+
+    cross_model = svm.SVC(C=clf.best_params_['C'],degree=clf.best_params_['degree'],kernel=clf.best_params_['kernel'],gamma=clf.best_params_['gamma'], decision_function_shape=clf.best_params_['decision_function_shape'], verbose=0)
+    scores = cross_val_score(cross_model, x, y.ravel(), cv=s)
+
+    return clf.best_estimator_, scores, clf.best_params_
 
 # 读取模型
 def modelReader(filePath):
