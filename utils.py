@@ -8,6 +8,7 @@ from sklearn.externals import joblib
 from sklearn.model_selection import GridSearchCV
 
 # 输入数据矩阵 X 及主成分数目 c
+# 主成分数目 c 要小于数据矩阵 X 的长和宽 即 c <= min(x.shape[0],x.shape[1])
 # 输出降维后的数据及贡献率
 def pca_op(X,c=3):
 
@@ -23,6 +24,7 @@ def pca_op(X,c=3):
     return newX, pca_result.explained_variance_ratio_
 
 # 输入降维后的数据 x 标注 y 交叉验证折数 s
+# 交叉验证折数是有限制的 必须保证训练集每个类都能至少分为 s 份 即单个类的数目 sn 应满足 sn / s >= 1
 # 输出最佳的SVM模型
 def cross_validation(x,y,s=10):
 
