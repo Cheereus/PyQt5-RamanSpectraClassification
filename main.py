@@ -1,4 +1,4 @@
-# 此为第一版 第二版为 core.py
+# 此为第一版 bug较多 第二版为 core.py
 import sys
 import random
 import pandas as pd
