@@ -133,8 +133,10 @@ def openModel(self):
         self.scrossLabel.setText('交叉验证数目：' + str(self.scross))
         self.filepath.setText("已选择模型：" + filePath)
         if self.classNum > 2:
+            self.classType = 'multi'
             showLabel(self.classTypeLabel,'当前模式：多分类(' + str(self.classNum) + '类)')
         else:
+            self.classType = 'binary'
             showLabel(self.classTypeLabel,'当前模式：二分类')
         self.btn6.setVisible(True)
         # 导入模型后不允许修改参数及主成分分析、训练等操作
