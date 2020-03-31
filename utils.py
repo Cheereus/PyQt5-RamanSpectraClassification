@@ -16,12 +16,19 @@ def pca_op(X,c=3):
     x = prepress.fit_transform(X)  # 拟合转换数据一统一量纲标准化
     pca_result = PCA(n_components=c)      # 降维后有c个主成分
     pca_result.fit(x)                     # 训练
-    newX=pca_result.fit_transform(x)      # 降维后的数据
+    newX = pca_result.fit_transform(x)      # 降维后的数据
 
     # 保存为csv文件
     np.savetxt('output/pca_x.csv', newX, delimiter = ',')
 
-    return newX, pca_result.explained_variance_ratio_
+    return newX, pca_result.explained_variance_ratio_, pca_result
+
+# 使用先有的 pca 模型进行直接降维 输出降维后的矩阵
+def re_pca(X, pcaModel):
+    prepress = Normalizer()  #
+    x = prepress.fit_transform(X)  # 拟合转换数据一统一量纲标准化
+    newX = pcaModel.transform(x)
+    return newX
 
 # 输入降维后的数据 x 标注 y 交叉验证折数 s
 # 交叉验证折数是有限制的 必须保证训练集每个类都能至少分为 s 份 即单个类的数目 sn 应满足 sn / s >= 1
@@ -43,12 +50,25 @@ def cross_validation(x,y,s=10):
     clf.fit(x, y)
     print(clf.best_params_)
     print(clf.best_score_)
-    joblib.dump(clf.best_estimator_, 'output/svm_model.pkl')
 
     cross_model = svm.SVC(C=clf.best_params_['C'],degree=clf.best_params_['degree'],kernel=clf.best_params_['kernel'],gamma=clf.best_params_['gamma'], decision_function_shape=clf.best_params_['decision_function_shape'], verbose=0)
     scores = cross_val_score(cross_model, x, y.ravel(), cv=s)
 
     return clf.best_estimator_, scores, clf.best_params_
+
+class model:
+    def __init__(self, OSVM, pcaModel, classNum, threshold, n_components, scross):
+        self.svmModel = OSVM
+        self.pcaModel = pcaModel
+        self.classNum = classNum
+        self.threshold = threshold
+        self.n_components = n_components
+        self.scross = scross
+
+# 保存模型
+def modelSave(OSVM, pcaModel, classNum, threshold, n_components, scross):
+    modelObj = model(OSVM, pcaModel, classNum, threshold, n_components, scross)
+    joblib.dump(modelObj, 'output/svm_model_with_pca.pkl')
 
 # 读取模型
 def modelReader(filePath):
@@ -56,10 +76,4 @@ def modelReader(filePath):
     f = open(filePath,'rb')
     model = joblib.load(f)
     f.close()
-    return model
-
-# 近红外光谱基线校正 airPLS
-
-def airPLS():
-    
-    return None
+    return model.svmModel, model.pcaModel, model.classNum, model.threshold, model.n_components, model.scross

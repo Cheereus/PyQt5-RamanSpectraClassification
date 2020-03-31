@@ -35,6 +35,7 @@ class ApplicationWindow(QMainWindow):
         self.labels = None        # 标注序列
         self.ratio = None         # 方差贡献率
         self.OSVM = None          # 最佳 SVM 模型
+        self.pcaModel = None      # pca 模型
 
         # 布局
         self.main_widget = QWidget(self)
@@ -125,8 +126,16 @@ def openTrain(self):
 def openModel(self):
     filePath,filetype = QFileDialog.getOpenFileName(self,"选取文件","./", "model Files (*.pkl)")
     if filePath:
-        self.OSVM = modelReader(filePath)
+        self.OSVM, self.pcaModel, self.classNum, self.threshold, self.components, self.scross = modelReader(filePath)
+
+        self.thresholdLabel.setText('二分类阈值：' + str(self.threshold))
+        self.componentsLabel.setText('主成分数目：' + str(self.components))
+        self.scrossLabel.setText('交叉验证数目：' + str(self.scross))
         self.filepath.setText("已选择模型：" + filePath)
+        if self.classNum > 2:
+            showLabel(self.classTypeLabel,'当前模式：多分类(' + str(self.classNum) + '类)')
+        else:
+            showLabel(self.classTypeLabel,'当前模式：二分类')
         self.btn6.setVisible(True)
         # 导入模型后不允许修改参数及主成分分析、训练等操作
         self.btn0.setEnabled(False)
@@ -135,6 +144,9 @@ def openModel(self):
         self.btn3.setEnabled(False)
         self.btn4.setEnabled(False)
         self.btn5.setEnabled(False)
+        self.ratioLabel.setVisible(False)
+        self.btn5.setEnabled(False)
+        self.svmLabel.setVisible(False)
         
     else:
         QMessageBox.warning(self,"温馨提示","打开文件错误，请重新尝试！",QMessageBox.Cancel)
@@ -147,9 +159,6 @@ def addForm(self,llayout):
     self.filepath = QLabel('请先导入数据或模型！')
     self.filepath.setFixedWidth(600)
     llayout.addRow(self.filepath)
-    self.classNumberLabel = QLabel('当前分类数：2')
-    llayout.addRow(self.classNumberLabel)
-    self.classNumberLabel.setVisible(False)
 
     # 参数展示及修改
     self.classTypeLabel = QLabel('当前模式：二分类')
@@ -278,11 +287,13 @@ def getLabel(self):
 def toggleClassType(self):
     if self.classType == 'binary':
         self.classType = 'multi'
-        self.classNumberLabel.setVisible(False)
     else:
         self.classType = 'binary'
-        self.classNumberLabel.setVisible(True)
     self.labels, self.classNum = getLabel(self)
+    if self.classType == 'binary':
+        setTable(self, self.labels, self.X)
+    else:
+        setTable(self, self.labels / 100, self.X)
     # 切换后需要重新训练 因此关闭部分按钮和文字
     self.ratioLabel.setVisible(False)
     self.btn5.setEnabled(False)
@@ -306,7 +317,7 @@ def changeParas(self,type):
 
 # 主成分分析
 def pca(self,X,n, showTable):
-    self.newX, self.ratio = pca_op(X,n)
+    self.newX, self.ratio, self.pcaModel = pca_op(X,n)
     ratioText = "方差贡献率：\n"
     sum = 0
     for i in range(len(self.ratio)):
@@ -321,6 +332,7 @@ def pca(self,X,n, showTable):
 # 支持向量机训练
 def getSVM(self,newX,labels,s):
     self.OSVM, scores, bestParas = cross_validation(newX,labels,s)
+    modelSave(self.OSVM, self.pcaModel, self.classNum, self.threshold, self.components, self.scross)
 
     # 如果要针对不同的核函数加 if else 就改这个 bestText
     bestText = "最优参数：\n" + "C:" + str(bestParas['C']) + '\ngamma:' + str(bestParas['gamma']) + '\ndegree:' + str(bestParas['degree']) + '\nkernel:' + str(bestParas['kernel']) + '\ndecision_function_shape:' + str(bestParas['decision_function_shape'])
@@ -331,7 +343,7 @@ def getSVM(self,newX,labels,s):
         avg = avg + scores[i]
         svmText = svmText + str(scores[i]) + "\n"
     avg = avg / len(scores)
-    svmText = bestText + svmText + '平均准确率：' + str(avg) + "\n模型已保存至 output/svm_model.pkl"
+    svmText = bestText + svmText + '平均准确率：' + str(avg) + "\n模型已保存至 output/svm_model_with_pca.pkl"
     showLabel(self.svmLabel,svmText)
     self.btn6.setVisible(True)
 
@@ -348,7 +360,7 @@ def getPredict(self):
     if filePath:
         self.filepath.setText("已选测试集：" + filePath)
         self.X, self.headline = csvReader(filePath)
-        pca(self, self.X, self.components,showTable=False)
+        self.newX = re_pca(self.X, self.pcaModel)
         self.labels = self.OSVM.predict(self.newX)
         
         correct = 0
