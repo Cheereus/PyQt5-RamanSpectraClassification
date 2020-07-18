@@ -1,75 +1,83 @@
 # PyQt5-RamanSpectraClassification
 
-基于 PyQt5 的拉曼光谱分类 GUI
+Raman spectral classification base on PyQt5
+
+基于 PyQt5 的拉曼光谱分类 GUI [查看中文版README](https://github.com/Cheereus/PyQt5-RamanSpectraClassification/blob/master/README-zh.md)
 
 version: 2.0
 
-&copy; 本工作属于学长的硕士毕业论文《拉曼光谱结合化学计量学在磷矿检测中的应用》(2020)
+&copy; This project belongs to my senior's Master thesis《拉曼光谱结合化学计量学在磷矿检测中的应用》(2020)
 
-## 主要功能
+## Main Function
 
-### 导入训练集
+### Import Training Set
 
-所需的训练集格式要求：
+Training set file format requirements：
 
-* 要求为 csv 文件
-* 第一行为浓度标记，二分类时将根据分类阈值分为高低两类
-* 第一列为光谱波长，在分析时无具体意义
+* It should be `.csv` file.
+* The first row is the concentration mark, and it will be divided into high and low categories according to the classification threshold in the binary classification.
+* The first column is the spectral wavelength, which has no specific meaning in our data analysis.
 
-### 参数配置
+### Parameter Configuration
 
-分类模式：
+Classification mode：
 
-* 二分类，根据分类阈值将浓度标记分为高低两类
-* 多分类，直接按浓度标记分为原本的类目
-* 展示分类数目
+* Binary classification. According to the classification threshold, the concentration markers are divided into high and low categories.
+* Multi-class classification. datasets will be directly divided into the original categories by concentration mark.
+* Display the number of categories.
 
-主成分数目：
+Number of principal components:
 
-* 可自定义
-* 默认 3 种
+* It can be customized.
+* 3 by default.
 
-交叉验证折数：
+Cross-validation folds：
 
-* 可自定义
-* 默认 10 折
+* It can be customized.
+* 10 by default.
 
-### 主成分分析
+### Principal component analysis (PCA)
 
-使用 PCA 方法，根据配置的主成分数目进行降维，并输出每维的方差贡献率及其总和
+Perform dimensionality reduction according to the number of principal components configured, and output the variance contribution rate of each dimension and their sum.
 
-### 支持向量机训练
+### Support vector machine (SVM) training
 
-使用网格搜索来寻找最优参数，并展示
+Use grid search to find the optimal parameters and display them.
 
-* 二分类时标签为 0,1
-* 多分类时为 浓度 * 100 即去除了小数点，并转为 int 类型
-* 根据最优参数进行交叉验证，并输出交叉验证的准确率及平均准确率
+* The labels are 0 and 1 in binary classification.
+* In multi-class classification, the labels are concentration * 100 (so that the decimal point is removed), and convert them into int type.
+* Perform cross-validation according to the optimal parameters, and output the accuracy rates and average accuracy rate of the cross-validation.
 
-### 保存和导入 SVM 模型文件
+### Save and import SVM model file
 
-可以保存和导入上述步骤的模型文件，免去重新训练的重复步骤
+The model of the above steps can be saved and imported as file, eliminating the need for repeated steps of retraining
 
-### 预测
+### Prediction
 
-导入需要预测的数据集进行预测：
+Import the data set that needs to be predicted then make prediction:
 
-* 预测集的读取方法和预测集相同，因此需要保证第一行第一列无数据，因为这部分内容会被丢弃
-* 预测结果也会保存至 csv 文件中
+* The reading method of the prediction set is the same as that of the training set, so it is necessary to ensure that there is no data in the first row and first column, because this part of the content will be discarded.
+* The results will alse be saved as `.csv` file.
 
-### 数据展示
+### Data demonstration
 
-每步操作都会即时在右侧表格中展示当前步骤的输出数据
+Each step will instantly display the output data of the current step in the table on the right.
 
-## 说明
+## Instructions for use
 
-### 运行环境
+### Running environment
 
 Anaconda (Python 3.7.1 64-bit)
 
 Windows 10 Pro 64-bit
 
-### 涉及依赖
+Command line start:
+
+```shell
+python main.py
+```
+
+### Dependencies
 
 pyqt5
 
@@ -79,44 +87,38 @@ numpy
 
 sklearn
 
-### 文件说明
+### File instructions
 
-代码中包含了相当多的注释，方便读者理解
+The code contains a lot of comments to facilitate readers’ understanding.
 
 #### main.py
 
-核心功能，涉及：
+Core functions including：
 
-* GUI 初始化及主要流程
-* csv 文件读取及标签处理
-* 表格展示及处理
-* 参数配置、按钮操作
+* GUI initialization and main process.
+* `.csv` file operations and label treatment.
+* Table display and processing.
+* Parameter configuration and button operations.
 
 #### utils.py
 
-主要是涉及机器学习的内容：
+Mainly includes machine learning fuctions：
 
-* 主成分分析
-* 支持向量机训练，包括交叉验证、模型保存
-* 模型读取
+* PCA
+* SVM training including cross-validation.
+* Save and import model file.
 
-### 项目成果
+### Project achievements
 
-实现了基于 pyqt5 的光谱分类处理的整个流程 GUI 包括：
+The entire process GUI of spectral classification processing based on PyQt5 including：
 
-* 文件导入、文本展示、按钮事件、布局排版
-* QTableWidget 表格展示
+* File import, text display, button events, layout and typesetting.
+* QTableWidget table display.
 
-实现了基于 sklearn 的支持向量机模型训练及预测
+Support vector machine model training and prediction based on sklearn.
 
-实现了文件存取，数据统计及分析处理
+File access, data statistics and analysis processing.
 
-### 总结
+### Interface language
 
-是第一次使用 pyqt5 制作 GUI，之前用过 Electron
-
-python 有天然的功能优势，但在界面布局和美化上，难以与基于 H5 的 Electron 相比
-
-踩了很多的坑，也对 python 和涉及到的各种库有了更多的了解
-
-参考了大量的资料，无法再一一列举，在此对所有在网络上辛勤奉献的同行们表示由衷的感激
+The interface language is `Chinese`, if you need a English version (or you want to provide a English version) please send me a email (fanwei1995@hotmail.com) or create an issue.
