@@ -8,6 +8,8 @@ version: 2.0
 
 &copy; This project belongs to my senior's Master thesis《拉曼光谱结合化学计量学在磷矿检测中的应用》(2020)
 
+If this project is useful to you, please give me a star !
+
 ## Main Function
 
 ### Import Training Set
